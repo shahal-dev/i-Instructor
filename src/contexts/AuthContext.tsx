@@ -8,7 +8,7 @@ import {
   signOut,
   onAuthStateChanged,
   sendPasswordResetEmail,
-  updateProfile
+  updateProfile as updateFirebaseProfile
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
@@ -48,6 +48,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             ...userData,
             id: firebaseUser.uid,
             email: firebaseUser.email || userData.email,
+            avatar: firebaseUser.photoURL || userData.avatar,
+            emailVerified: firebaseUser.emailVerified,
+            isOnline: true
+          });
+          
+          // Update last login time
+          await updateDoc(doc(db, 'users', firebaseUser.uid), {
+            lastLoginAt: new Date(),
             isOnline: true
           });
         } else {
@@ -56,12 +64,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             id: firebaseUser.uid,
             name: firebaseUser.displayName || 'User',
             email: firebaseUser.email || '',
+            avatar: firebaseUser.photoURL || undefined,
             role: 'learner',
             rating: 0,
-            isVerified: firebaseUser.emailVerified,
+            emailVerified: firebaseUser.emailVerified,
+            isVerified: false, // Will be verified by admin/system
             isOnline: true,
             responseTime: 0,
-            totalSessions: 0
+            totalSessions: 0,
+            createdAt: new Date(),
+            lastLoginAt: new Date(),
+            preferences: {
+              notifications: true,
+              emailUpdates: true,
+              theme: 'light'
+            }
           };
           
           await setDoc(doc(db, 'users', firebaseUser.uid), basicUser);
@@ -94,6 +111,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       const provider = new GoogleAuthProvider();
+      
+      // Add additional scopes if needed
+      provider.addScope('profile');
+      provider.addScope('email');
+      
       const result = await signInWithPopup(auth, provider);
       
       // Check if user profile exists, if not create one
@@ -104,15 +126,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           id: result.user.uid,
           name: result.user.displayName || 'User',
           email: result.user.email || '',
+          avatar: result.user.photoURL || undefined,
           role: 'learner',
           rating: 0,
-          isVerified: result.user.emailVerified,
+          emailVerified: result.user.emailVerified,
+          isVerified: false,
           isOnline: true,
           responseTime: 0,
-          totalSessions: 0
+          totalSessions: 0,
+          createdAt: new Date(),
+          lastLoginAt: new Date(),
+          preferences: {
+            notifications: true,
+            emailUpdates: true,
+            theme: 'light'
+          }
         };
         
         await setDoc(doc(db, 'users', result.user.uid), newUser);
+      } else {
+        // Update existing user's last login and online status
+        await updateDoc(doc(db, 'users', result.user.uid), {
+          lastLoginAt: new Date(),
+          isOnline: true,
+          avatar: result.user.photoURL || userDoc.data().avatar
+        });
       }
       
       return true;
@@ -129,7 +167,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const result = await createUserWithEmailAndPassword(auth, userData.email!, password);
       
       // Update Firebase Auth profile
-      await updateProfile(result.user, {
+      await updateFirebaseProfile(result.user, {
         displayName: userData.name
       });
 
@@ -145,10 +183,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         skills: userData.skills || [],
         bio: userData.bio,
         rating: 0,
-        isVerified: result.user.emailVerified,
+        emailVerified: result.user.emailVerified,
+        isVerified: false,
         isOnline: true,
         responseTime: 0,
-        totalSessions: 0
+        totalSessions: 0,
+        createdAt: new Date(),
+        lastLoginAt: new Date(),
+        preferences: {
+          notifications: true,
+          emailUpdates: true,
+          theme: 'light'
+        }
       };
       
       await setDoc(doc(db, 'users', result.user.uid), newUser);
@@ -189,11 +235,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     try {
       // Update Firestore document
-      await updateDoc(doc(db, 'users', user.id), userData);
+      await updateDoc(doc(db, 'users', user.id), {
+        ...userData,
+        updatedAt: new Date()
+      });
       
       // Update Firebase Auth profile if name changed
       if (userData.name && firebaseUser) {
-        await updateProfile(firebaseUser, {
+        await updateFirebaseProfile(firebaseUser, {
           displayName: userData.name
         });
       }

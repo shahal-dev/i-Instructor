@@ -14,6 +14,15 @@ export interface User {
   isOnline?: boolean;
   responseTime?: number; // in minutes
   totalSessions?: number;
+  createdAt?: Date;
+  lastLoginAt?: Date;
+  emailVerified?: boolean;
+  phoneNumber?: string;
+  preferences?: {
+    notifications?: boolean;
+    emailUpdates?: boolean;
+    theme?: 'light' | 'dark';
+  };
 }
 
 export interface Session {
