@@ -62,8 +62,10 @@ export interface KnowledgeItem {
 export interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
+  loginWithGoogle: () => Promise<boolean>;
   register: (userData: Partial<User>, password: string) => Promise<boolean>;
   logout: () => void;
+  resetPassword: (email: string) => Promise<boolean>;
   updateProfile: (userData: Partial<User>) => Promise<boolean>;
   isLoading: boolean;
 }
