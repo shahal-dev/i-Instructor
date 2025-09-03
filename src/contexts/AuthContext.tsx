@@ -109,7 +109,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const loginWithGoogle = async (): Promise<boolean> => {
     try {
-      setIsLoading(true);
       const provider = new GoogleAuthProvider();
       
       // Add additional scopes if needed
@@ -117,6 +116,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       provider.addScope('email');
       
       const result = await signInWithPopup(auth, provider);
+      setIsLoading(true);
       
       // Check if user profile exists, if not create one
       const userDoc = await getDoc(doc(db, 'users', result.user.uid));
