@@ -2,7 +2,7 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'learner' | 'instructor';
+  role: 'learner' | 'instructor' | 'admin';
   avatar?: string;
   university?: string;
   department?: string;
@@ -68,6 +68,34 @@ export interface KnowledgeItem {
   createdAt: Date;
 }
 
+export interface HomeworkRequest {
+  id: string;
+  studentId: string;
+  subject: string;
+  title: string;
+  description: string;
+  deadline?: Date;
+  urgency: 'normal' | 'urgent' | 'emergency';
+  files?: string[];
+  status: 'pending' | 'assigned' | 'completed' | 'cancelled';
+  assignedInstructorId?: string;
+  solution?: string;
+  price: number;
+  submittedAt: Date;
+  completedAt?: Date;
+}
+
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  criteria: {
+    type: 'sessions' | 'rating' | 'response_time' | 'subject_expertise';
+    threshold: number;
+  };
+}
 export interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;

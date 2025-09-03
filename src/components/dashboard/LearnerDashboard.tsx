@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
-import { Clock, Star, BookOpen, Users, TrendingUp, Calendar, Search } from 'lucide-react';
+import { Clock, Star, BookOpen, Users, TrendingUp, Calendar, Search, FileText } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import GetHelpModal from '../common/GetHelpModal';
+import SessionScheduler from '../scheduling/SessionScheduler';
+import HomeworkHelp from '../homework/HomeworkHelp';
 
 const LearnerDashboard: React.FC = () => {
   const { user } = useAuth();
   const [showGetHelpModal, setShowGetHelpModal] = useState(false);
+  const [showScheduler, setShowScheduler] = useState(false);
+  const [showHomeworkHelp, setShowHomeworkHelp] = useState(false);
 
   const recentSessions = [
     {
@@ -85,19 +89,34 @@ const LearnerDashboard: React.FC = () => {
           <div className="bg-blue-50 border-2 border-blue-200 p-6 rounded-xl">
             <Calendar className="w-8 h-8 text-blue-600 mb-3" />
             <h3 className="font-semibold text-lg text-blue-900">Schedule Session</h3>
-            <p className="text-blue-700 text-sm">Book for later</p>
+            <button 
+              onClick={() => setShowScheduler(true)}
+              className="text-blue-700 text-sm hover:text-blue-800 transition-colors"
+            >
+              Book for later
+            </button>
           </div>
 
           <div className="bg-green-50 border-2 border-green-200 p-6 rounded-xl">
             <BookOpen className="w-8 h-8 text-green-600 mb-3" />
             <h3 className="font-semibold text-lg text-green-900">Knowledge Base</h3>
-            <p className="text-green-700 text-sm">Browse solutions</p>
+            <a 
+              href="#knowledge"
+              className="text-green-700 text-sm hover:text-green-800 transition-colors"
+            >
+              Browse solutions
+            </a>
           </div>
 
           <div className="bg-purple-50 border-2 border-purple-200 p-6 rounded-xl">
-            <Users className="w-8 h-8 text-purple-600 mb-3" />
-            <h3 className="font-semibold text-lg text-purple-900">Study Groups</h3>
-            <p className="text-purple-700 text-sm">Join collaborative sessions</p>
+            <FileText className="w-8 h-8 text-purple-600 mb-3" />
+            <h3 className="font-semibold text-lg text-purple-900">Homework Help</h3>
+            <button 
+              onClick={() => setShowHomeworkHelp(true)}
+              className="text-purple-700 text-sm hover:text-purple-800 transition-colors"
+            >
+              Submit assignment
+            </button>
           </div>
         </div>
 
@@ -210,6 +229,21 @@ const LearnerDashboard: React.FC = () => {
 
       {showGetHelpModal && (
         <GetHelpModal onClose={() => setShowGetHelpModal(false)} />
+      )}
+
+      {showScheduler && (
+        <SessionScheduler 
+          onClose={() => setShowScheduler(false)}
+          onSchedule={(data) => {
+            console.log('Scheduled session:', data);
+            setShowScheduler(false);
+            alert('Session scheduled successfully!');
+          }}
+        />
+      )}
+
+      {showHomeworkHelp && (
+        <HomeworkHelp onClose={() => setShowHomeworkHelp(false)} />
       )}
     </>
   );

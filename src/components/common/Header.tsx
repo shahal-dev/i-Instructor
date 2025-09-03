@@ -34,12 +34,20 @@ const Header: React.FC = () => {
               <a href="#subjects" className="text-gray-600 hover:text-blue-600 transition-colors">
                 Subjects
               </a>
+              <a href="#leaderboard" className="text-gray-600 hover:text-blue-600 transition-colors">
+                Top Instructors
+              </a>
               <a href="#pricing" className="text-gray-600 hover:text-blue-600 transition-colors">
                 Pricing
               </a>
               {user && (
                 <a href="#dashboard" className="text-gray-600 hover:text-blue-600 transition-colors">
                   Dashboard
+                </a>
+              )}
+              {user && (
+                <a href="#profile" className="text-gray-600 hover:text-blue-600 transition-colors">
+                  Profile
                 </a>
               )}
             </nav>
