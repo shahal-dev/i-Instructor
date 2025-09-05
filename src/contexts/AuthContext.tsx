@@ -10,9 +10,10 @@ import {
   sendPasswordResetEmail,
   updateProfile as updateFirebaseProfile
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
-import { auth, db } from '../config/firebase';
+import { auth } from '../config/firebase';
 import { User, AuthContextType } from '../types';
+import apiService from '../services/api';
+import socketService from '../services/socket';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -39,27 +40,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (firebaseUser) {
         setFirebaseUser(firebaseUser);
-        // Get user profile from Firestore
-        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
         
-        if (userDoc.exists()) {
-          const userData = userDoc.data() as User;
-          setUser({
-            ...userData,
-            id: firebaseUser.uid,
-            email: firebaseUser.email || userData.email,
-            avatar: firebaseUser.photoURL || userData.avatar,
-            emailVerified: firebaseUser.emailVerified,
-            isOnline: true
-          });
+        try {
+          // Get Firebase ID token
+          const idToken = await firebaseUser.getIdToken();
           
-          // Update last login time
-          await updateDoc(doc(db, 'users', firebaseUser.uid), {
-            lastLoginAt: new Date(),
-            isOnline: true
-          });
-        } else {
-          // Create basic user profile if it doesn't exist
+          // Authenticate with backend
+          const userData = {
+            id: firebaseUser.uid,
+            name: firebaseUser.displayName || 'User',
+            email: firebaseUser.email || '',
+            avatar: firebaseUser.photoURL || undefined,
+            role: 'learner',
+            emailVerified: firebaseUser.emailVerified,
+          };
+          
+          const response = await apiService.authenticateWithFirebase(idToken, userData);
+          
+          if (response.success) {
+            setUser(response.user);
+            // Connect to socket server
+            socketService.connect(response.user.id);
+          }
+        } catch (error) {
+          console.error('Backend authentication failed:', error);
+          // Fallback to basic user data
           const basicUser: User = {
             id: firebaseUser.uid,
             name: firebaseUser.displayName || 'User',
@@ -68,7 +73,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             role: 'learner',
             rating: 0,
             emailVerified: firebaseUser.emailVerified,
-            isVerified: false, // Will be verified by admin/system
+            isVerified: false,
             isOnline: true,
             responseTime: 0,
             totalSessions: 0,
@@ -80,13 +85,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               theme: 'light'
             }
           };
-          
-          await setDoc(doc(db, 'users', firebaseUser.uid), basicUser);
           setUser(basicUser);
         }
       } else {
         setFirebaseUser(null);
         setUser(null);
+        socketService.disconnect();
       }
       
       setIsLoading(false);
@@ -208,12 +212,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
-      // Update user status to offline before signing out
-      if (user) {
-        await updateDoc(doc(db, 'users', user.id), {
-          isOnline: false
-        });
-      }
+      // Logout from backend
+      await apiService.logout();
+      // Disconnect socket
+      socketService.disconnect();
+      // Sign out from Firebase
       await signOut(auth);
     } catch (error) {
       console.error('Logout error:', error);
@@ -234,22 +237,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (!user) return false;
     
     try {
-      // Update Firestore document
-      await updateDoc(doc(db, 'users', user.id), {
-        ...userData,
-        updatedAt: new Date()
-      });
+      // Update profile via API
+      const response = await apiService.updateProfile(userData);
       
-      // Update Firebase Auth profile if name changed
-      if (userData.name && firebaseUser) {
-        await updateFirebaseProfile(firebaseUser, {
-          displayName: userData.name
-        });
+      if (response.success) {
+        // Update Firebase Auth profile if name changed
+        if (userData.name && firebaseUser) {
+          await updateFirebaseProfile(firebaseUser, {
+            displayName: userData.name
+          });
+        }
+        
+        // Update local state
+        setUser(response.user);
+        return true;
       }
       
-      // Update local state
-      setUser({ ...user, ...userData });
-      return true;
+      return false;
     } catch (error) {
       console.error('Profile update error:', error);
       return false;
