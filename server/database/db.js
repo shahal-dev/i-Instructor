@@ -143,6 +143,71 @@ const init = () => {
     )
   `);
 
+  // Payments table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS payments (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      learner_id TEXT NOT NULL,
+      instructor_id TEXT NOT NULL,
+      amount REAL NOT NULL,
+      currency TEXT DEFAULT 'usd',
+      stripe_payment_intent_id TEXT,
+      status TEXT CHECK(status IN ('pending', 'completed', 'failed', 'refunded')) DEFAULT 'pending',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      completed_at DATETIME,
+      FOREIGN KEY (session_id) REFERENCES sessions (id),
+      FOREIGN KEY (learner_id) REFERENCES users (id),
+      FOREIGN KEY (instructor_id) REFERENCES users (id)
+    )
+  `);
+
+  // Payouts table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS payouts (
+      id TEXT PRIMARY KEY,
+      instructor_id TEXT NOT NULL,
+      amount REAL NOT NULL,
+      method TEXT NOT NULL, -- 'bank', 'bkash', 'nagad', 'rocket'
+      account_details TEXT, -- JSON string
+      status TEXT CHECK(status IN ('pending', 'processing', 'completed', 'failed')) DEFAULT 'pending',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      processed_at DATETIME,
+      FOREIGN KEY (instructor_id) REFERENCES users (id)
+    )
+  `);
+
+  // Notifications table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS notifications (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      message TEXT NOT NULL,
+      type TEXT CHECK(type IN ('session', 'payment', 'system', 'reminder')) DEFAULT 'system',
+      is_read BOOLEAN DEFAULT FALSE,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      read_at DATETIME,
+      FOREIGN KEY (user_id) REFERENCES users (id)
+    )
+  `);
+
+  // Reviews table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS reviews (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      reviewer_id TEXT NOT NULL,
+      reviewee_id TEXT NOT NULL,
+      rating INTEGER CHECK(rating >= 1 AND rating <= 5) NOT NULL,
+      comment TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (session_id) REFERENCES sessions (id),
+      FOREIGN KEY (reviewer_id) REFERENCES users (id),
+      FOREIGN KEY (reviewee_id) REFERENCES users (id)
+    )
+  `);
+
   // Create indexes for better performance
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
@@ -153,6 +218,11 @@ const init = () => {
     CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_id);
     CREATE INDEX IF NOT EXISTS idx_queue_subject ON session_queue(subject);
     CREATE INDEX IF NOT EXISTS idx_queue_created ON session_queue(created_at);
+    CREATE INDEX IF NOT EXISTS idx_payments_status ON payments(status);
+    CREATE INDEX IF NOT EXISTS idx_payments_learner ON payments(learner_id);
+    CREATE INDEX IF NOT EXISTS idx_payments_instructor ON payments(instructor_id);
+    CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+    CREATE INDEX IF NOT EXISTS idx_reviews_session ON reviews(session_id);
   `);
 
   console.log('Database initialized successfully');

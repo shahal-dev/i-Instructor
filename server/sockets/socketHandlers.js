@@ -1,11 +1,20 @@
 const { v4: uuidv4 } = require('uuid');
 const { statements } = require('../database/db');
+const matchingEngine = require('../services/matchingEngine');
+const NotificationService = require('../services/notificationService');
 
 // Store active connections
 const activeConnections = new Map();
 const activeSessions = new Map();
 
+let notificationService;
+
 module.exports = (io, socket) => {
+  // Initialize notification service if not already done
+  if (!notificationService) {
+    notificationService = new NotificationService(io);
+  }
+
   console.log('New socket connection:', socket.id);
 
   // User authentication and connection setup
@@ -250,6 +259,9 @@ module.exports = (io, socket) => {
     
     if (!connection) return;
 
+    // Update matching engine
+    matchingEngine.updateInstructorAvailability(connection.userId, subjects, true);
+
     // Check for waiting learners in queue
     subjects.forEach(subject => {
       const queueItems = statements.getQueueBySubject.all(subject);
@@ -271,6 +283,9 @@ module.exports = (io, socket) => {
       
       if (connection) {
         const { userId, sessionId } = connection;
+        
+        // Update matching engine
+        matchingEngine.updateInstructorAvailability(userId, [], false);
         
         // Update user offline status
         statements.updateUserOnlineStatus.run(false, userId);
@@ -309,6 +324,14 @@ module.exports = (io, socket) => {
     console.error('Socket error:', error);
   });
 };
+
+// Initialize periodic tasks
+setInterval(() => {
+  // Clean old notifications every hour
+  if (notificationService) {
+    notificationService.cleanOldNotifications();
+  }
+}, 60 * 60 * 1000);
 
 // Export active connections for external use
 module.exports.getActiveConnections = () => activeConnections;

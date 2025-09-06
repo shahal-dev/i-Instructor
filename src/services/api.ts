@@ -135,6 +135,74 @@ class ApiService {
     return this.request(`/matching/instructors/${encodeURIComponent(subject)}`);
   }
 
+  // Payment methods
+  async createPaymentIntent(sessionId: string, instructorId: string, amount: number) {
+    return this.request('/payments/create-payment-intent', {
+      method: 'POST',
+      body: JSON.stringify({ sessionId, instructorId, amount }),
+    });
+  }
+
+  async confirmPayment(paymentIntentId: string, sessionId: string) {
+    return this.request('/payments/confirm-payment', {
+      method: 'POST',
+      body: JSON.stringify({ paymentIntentId, sessionId }),
+    });
+  }
+
+  async getPaymentHistory() {
+    return this.request('/payments/history');
+  }
+
+  async getInstructorEarnings() {
+    return this.request('/payments/earnings');
+  }
+
+  async requestPayout(amount: number, method: string, accountDetails: any) {
+    return this.request('/payments/request-payout', {
+      method: 'POST',
+      body: JSON.stringify({ amount, method, accountDetails }),
+    });
+  }
+
+  // Notification methods
+  async getNotifications() {
+    return this.request('/notifications');
+  }
+
+  async markNotificationRead(notificationId: string) {
+    return this.request(`/notifications/${notificationId}/read`, {
+      method: 'PUT',
+    });
+  }
+
+  async updateNotificationPreferences(preferences: any) {
+    return this.request('/notifications/preferences', {
+      method: 'PUT',
+      body: JSON.stringify(preferences),
+    });
+  }
+
+  // Analytics methods (admin only)
+  async getAnalyticsOverview(timeframe = 'week') {
+    return this.request(`/analytics/overview?timeframe=${timeframe}`);
+  }
+
+  async getUserGrowthAnalytics() {
+    return this.request('/analytics/user-growth');
+  }
+
+  async getSessionAnalytics() {
+    return this.request('/analytics/sessions');
+  }
+
+  async getInstructorAnalytics() {
+    return this.request('/analytics/instructors');
+  }
+
+  async getRevenueAnalytics() {
+    return this.request('/analytics/revenue');
+  }
   async acceptQueueItem(queueId: string) {
     return this.request(`/matching/accept/${queueId}`, {
       method: 'POST',
