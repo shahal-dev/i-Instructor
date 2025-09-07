@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "init-db": "node scripts/initDatabase.js",
+    "view-db": "node scripts/viewDatabase.js",
+    "reset-db": "rm -f data/iinstructor.db && node scripts/initDatabase.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
