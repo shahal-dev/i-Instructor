@@ -14,6 +14,7 @@ const matchingRoutes = require('./routes/matching');
 const paymentRoutes = require('./routes/payments');
 const notificationRoutes = require('./routes/notifications');
 const analyticsRoutes = require('./routes/analytics');
+const aiRoutes = require('./routes/ai');
 
 // Import socket handlers
 const socketHandlers = require('./sockets/socketHandlers');
@@ -59,6 +60,7 @@ app.use('/api/matching', matchingRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

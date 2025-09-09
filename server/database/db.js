@@ -208,6 +208,49 @@ const init = () => {
     )
   `);
 
+  // Moderation logs table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS moderation_logs (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      session_id TEXT,
+      content_type TEXT NOT NULL,
+      content_preview TEXT,
+      issues TEXT, -- JSON array of moderation issues
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id),
+      FOREIGN KEY (session_id) REFERENCES sessions (id)
+    )
+  `);
+
+  // Content reports table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS content_reports (
+      id TEXT PRIMARY KEY,
+      content_id TEXT NOT NULL,
+      content_type TEXT NOT NULL,
+      reporter_id TEXT NOT NULL,
+      reason TEXT NOT NULL,
+      status TEXT CHECK(status IN ('pending', 'reviewed', 'resolved', 'dismissed')) DEFAULT 'pending',
+      admin_notes TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      resolved_at DATETIME,
+      FOREIGN KEY (reporter_id) REFERENCES users (id)
+    )
+  `);
+
+  // Refresh tokens table
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS refresh_tokens (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      token_hash TEXT NOT NULL,
+      expires_at DATETIME NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users (id)
+    )
+  `);
+
   // Create indexes for better performance
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
@@ -223,6 +266,10 @@ const init = () => {
     CREATE INDEX IF NOT EXISTS idx_payments_instructor ON payments(instructor_id);
     CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
     CREATE INDEX IF NOT EXISTS idx_reviews_session ON reviews(session_id);
+    CREATE INDEX IF NOT EXISTS idx_moderation_logs_user ON moderation_logs(user_id);
+    CREATE INDEX IF NOT EXISTS idx_moderation_logs_created ON moderation_logs(created_at);
+    CREATE INDEX IF NOT EXISTS idx_content_reports_status ON content_reports(status);
+    CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
   `);
 
   console.log('Database initialized successfully');

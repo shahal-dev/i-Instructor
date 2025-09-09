@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Search, Clock, DollarSign, Star, Users, Loader } from 'lucide-react';
 import { Subject } from '../../types';
+import aiService from '../../services/aiService';
 
 interface GetHelpModalProps {
   onClose: () => void;
@@ -19,22 +20,55 @@ const GetHelpModal: React.FC<GetHelpModalProps> = ({ onClose }) => {
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [topic, setTopic] = useState('');
   const [description, setDescription] = useState('');
+  const [urgency, setUrgency] = useState<'normal' | 'urgent' | 'emergency'>('normal');
+  const [maxPrice, setMaxPrice] = useState<number | undefined>();
   const [searchingInstructor, setSearchingInstructor] = useState(false);
+  const [aiRecommendations, setAiRecommendations] = useState<any[]>([]);
+  const [searchSuggestions, setSearchSuggestions] = useState<string[]>([]);
 
   const handleGetHelp = async () => {
     if (!selectedSubject || !topic) return;
 
     setSearchingInstructor(true);
     
-    // Simulate instructor matching
-    setTimeout(() => {
+    try {
+      // Get AI-powered recommendations
+      const response = await aiService.getInstructorRecommendations({
+        subject: subjects.find(s => s.id === selectedSubject)?.name || '',
+        topic,
+        description,
+        urgency,
+        maxPrice
+      });
+      
+      setAiRecommendations(response.recommendations || []);
+      
+      // Simulate connection to best match
+      setTimeout(() => {
+        setSearchingInstructor(false);
+        onClose();
+        alert(`Connected with ${response.recommendations?.[0]?.name || 'an instructor'}!`);
+      }, 1500);
+    } catch (error) {
+      console.error('Failed to get recommendations:', error);
       setSearchingInstructor(false);
       onClose();
-      // In a real app, this would redirect to the session interface
       alert('Instructor found! Connecting you now...');
-    }, 2000);
+    }
   };
 
+  const handleTopicChange = (value: string) => {
+    setTopic(value);
+    if (value.length > 2 && selectedSubject) {
+      const suggestions = aiService.generateSearchSuggestions(
+        value, 
+        subjects.find(s => s.id === selectedSubject)?.name
+      );
+      setSearchSuggestions(suggestions);
+    } else {
+      setSearchSuggestions([]);
+    }
+  };
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -111,13 +145,31 @@ const GetHelpModal: React.FC<GetHelpModalProps> = ({ onClose }) => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       What specific topic?
                     </label>
-                    <input
-                      type="text"
-                      value={topic}
-                      onChange={(e) => setTopic(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      placeholder="e.g., Integration by parts, Binary trees, Essay structure"
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={topic}
+                        onChange={(e) => handleTopicChange(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="e.g., Integration by parts, Binary trees, Essay structure"
+                      />
+                      {searchSuggestions.length > 0 && (
+                        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+                          {searchSuggestions.map((suggestion, index) => (
+                            <button
+                              key={index}
+                              onClick={() => {
+                                setTopic(suggestion);
+                                setSearchSuggestions([]);
+                              }}
+                              className="w-full text-left px-3 py-2 hover:bg-gray-100 text-sm"
+                            >
+                              {suggestion}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div>
@@ -133,15 +185,55 @@ const GetHelpModal: React.FC<GetHelpModalProps> = ({ onClose }) => {
                     />
                   </div>
 
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      How urgent is this?
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { value: 'normal', label: 'Normal', color: 'border-gray-300' },
+                        { value: 'urgent', label: 'Urgent', color: 'border-orange-300' },
+                        { value: 'emergency', label: 'Emergency', color: 'border-red-300' }
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => setUrgency(option.value as any)}
+                          className={`p-2 rounded-lg border-2 transition-all text-sm ${
+                            urgency === option.value
+                              ? `${option.color} bg-opacity-20`
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Maximum budget (optional)
+                    </label>
+                    <input
+                      type="number"
+                      value={maxPrice || ''}
+                      onChange={(e) => setMaxPrice(e.target.value ? parseFloat(e.target.value) : undefined)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="e.g., 10"
+                      min="1"
+                      step="0.5"
+                    />
+                  </div>
+
                   <div className="bg-blue-50 rounded-lg p-4">
                     <div className="flex items-start space-x-3">
                       <Clock className="w-5 h-5 text-blue-600 mt-0.5" />
                       <div>
                         <div className="text-sm font-medium text-blue-900">
-                          Expected wait time: 1-3 minutes
+                          Expected wait time: {urgency === 'emergency' ? '<1' : urgency === 'urgent' ? '1-2' : '2-5'} minutes
                         </div>
                         <div className="text-xs text-blue-700 mt-1">
-                          Session starts at ${subjects.find(s => s.id === selectedSubject)?.averagePrice}/15min
+                          Estimated cost: ${(subjects.find(s => s.id === selectedSubject)?.averagePrice || 3) * (urgency === 'emergency' ? 2 : urgency === 'urgent' ? 1.5 : 1)}/15min
                         </div>
                       </div>
                     </div>
