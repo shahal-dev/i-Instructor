@@ -270,8 +270,44 @@ const init = () => {
     CREATE INDEX IF NOT EXISTS idx_moderation_logs_created ON moderation_logs(created_at);
     CREATE INDEX IF NOT EXISTS idx_content_reports_status ON content_reports(status);
     CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
+
+    CREATE INDEX IF NOT EXISTS idx_sessions_started_at ON sessions(started_at);
+    CREATE INDEX IF NOT EXISTS idx_sessions_reminder ON sessions(reminder_sent);
   `);
 
+  // Add new tables for file management and scheduling
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS session_files (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL,
+      original_name TEXT NOT NULL,
+      filename TEXT NOT NULL,
+      mimetype TEXT NOT NULL,
+      size INTEGER NOT NULL,
+      url TEXT NOT NULL,
+      uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (session_id) REFERENCES sessions (id)
+    )
+  `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS homework_files (
+      id TEXT PRIMARY KEY,
+      homework_id TEXT NOT NULL,
+      original_name TEXT NOT NULL,
+      filename TEXT NOT NULL,
+      mimetype TEXT NOT NULL,
+      size INTEGER NOT NULL,
+      url TEXT NOT NULL,
+      uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (homework_id) REFERENCES homework_requests (id)
+    )
+  `);
+
+  // Add reminder_sent column to sessions table
+  db.exec(`
+    ALTER TABLE sessions ADD COLUMN reminder_sent BOOLEAN DEFAULT FALSE;
+  `);
   console.log('Database initialized successfully');
 };
 

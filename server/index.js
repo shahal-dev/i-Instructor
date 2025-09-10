@@ -15,12 +15,17 @@ const paymentRoutes = require('./routes/payments');
 const notificationRoutes = require('./routes/notifications');
 const analyticsRoutes = require('./routes/analytics');
 const aiRoutes = require('./routes/ai');
+const calendarRoutes = require('./routes/calendar');
+const fileRoutes = require('./routes/files');
 
 // Import socket handlers
 const socketHandlers = require('./sockets/socketHandlers');
 
 // Import database
 const db = require('./database/db');
+
+// Import scheduler service
+const schedulerService = require('./services/schedulerService');
 
 const app = express();
 const server = http.createServer(app);
@@ -61,6 +66,11 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/calendar', calendarRoutes);
+app.use('/api/files', fileRoutes);
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Health check
 app.get('/api/health', (req, res) => {
