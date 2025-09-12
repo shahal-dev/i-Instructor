@@ -1,15 +1,25 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 
+// Firebase configuration from environment variables
 const firebaseConfig = {
-  apiKey: "AIzaSyCpmQBXP69Qz5YjlHJNed7mU_gc7i9hvnY",
-  authDomain: "i-instructor.firebaseapp.com",
-  projectId: "i-instructor",
-  storageBucket: "i-instructor.firebasestorage.app",
-  messagingSenderId: "337063375759",
-  appId: "1:337063375759:web:48c9c3dd3ea96f611151fa",
-  measurementId: "G-X16SK78C2N"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
+
+// Validate required Firebase config
+const requiredConfig = ['apiKey', 'authDomain', 'projectId', 'storageBucket', 'messagingSenderId', 'appId'];
+const missingConfig = requiredConfig.filter(key => !firebaseConfig[key as keyof typeof firebaseConfig]);
+
+if (missingConfig.length > 0) {
+  console.error('Missing Firebase configuration:', missingConfig);
+  console.error('Please check your .env file and ensure all VITE_FIREBASE_* variables are set');
+}
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);

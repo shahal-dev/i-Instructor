@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # Backend service
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3004:3004"
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+      - ./server/data:/app/data
+      - ./server/uploads:/app/uploads
+    environment:
+      - NODE_ENV=development
+      - PORT=3004
+      - JWT_SECRET=your-jwt-secret-key
+      - FIREBASE_PROJECT_ID=your-firebase-project-id
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  # Frontend service
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:3004
+      - VITE_SOCKET_URL=http://localhost:3004
+    networks:
+      - app-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  backend_data:
+  backend_uploads:
