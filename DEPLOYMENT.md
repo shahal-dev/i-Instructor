@@ -5,6 +5,7 @@ This guide covers deploying the i-Instructor application to various hosting plat
 ## 📋 Prerequisites
 
 - Docker and Docker Compose installed
+- Node.js 20+ (for local development)
 - Firebase project set up
 - Environment variables configured
 

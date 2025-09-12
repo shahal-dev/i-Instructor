@@ -40,9 +40,9 @@ docker-compose -f docker-compose.prod.yml down
 
 ```
 i-Instructor/
-├── Dockerfile                 # Production build (frontend + backend)
-├── Dockerfile.dev            # Development build (frontend only)
-├── server/Dockerfile.dev     # Development build (backend only)
+├── Dockerfile                 # Production build (frontend + backend) - Node.js 20
+├── Dockerfile.dev            # Development build (frontend only) - Node.js 20
+├── server/Dockerfile.dev     # Development build (backend only) - Node.js 20
 ├── docker-compose.yml        # Development environment
 ├── docker-compose.prod.yml   # Production environment
 ├── .dockerignore             # Files to exclude from Docker build
