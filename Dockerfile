@@ -41,7 +41,7 @@ RUN yarn install --production --frozen-lockfile
 COPY server/ .
 
 # Copy built frontend from the builder stage
-COPY --from=frontend-builder /app/dist ./public
+COPY --from=frontend-builder /app/frontend/dist ./public
 
 # Create necessary directories
 RUN mkdir -p data uploads/avatars uploads/homework uploads/session-files
