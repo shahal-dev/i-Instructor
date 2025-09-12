@@ -2,6 +2,10 @@
 node_modules/
 server/node_modules/
 
+# Package manager files (use only yarn.lock)
+package-lock.json
+server/package-lock.json
+
 # Build outputs
 dist/
 build/

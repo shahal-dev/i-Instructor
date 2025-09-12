@@ -1,12 +1,15 @@
 # Multi-stage build for production-ready React app
-FROM node:18-alpine as frontend-builder
+FROM node:20-alpine as frontend-builder
 
 # Set working directory for frontend
 WORKDIR /app/frontend
 
 # Copy frontend package files
-COPY package*.json ./
+COPY package.json ./
 COPY yarn.lock ./
+
+# Remove package-lock.json if it exists to avoid conflicts
+RUN rm -f package-lock.json
 
 # Install frontend dependencies
 RUN yarn install --frozen-lockfile
@@ -18,7 +21,7 @@ COPY . .
 RUN yarn build
 
 # Production stage - Backend with built frontend
-FROM node:18-alpine
+FROM node:20-alpine
 
 # Install sqlite3 for better-sqlite3 compatibility
 RUN apk add --no-cache sqlite python3 make g++
@@ -27,7 +30,7 @@ RUN apk add --no-cache sqlite python3 make g++
 WORKDIR /app
 
 # Copy backend package files first for better caching
-COPY server/package*.json ./server/
+COPY server/package.json ./server/
 COPY server/yarn.lock ./server/
 
 # Install backend dependencies
