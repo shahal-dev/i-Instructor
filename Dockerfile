@@ -26,15 +26,14 @@ FROM node:20-alpine
 # Install sqlite3 for better-sqlite3 compatibility
 RUN apk add --no-cache sqlite python3 make g++
 
-# Set working directory
+# Copy backend package files first for better caching
+COPY server/package.json ./
+COPY server/yarn.lock ./
+
+# Set working directory to server
 WORKDIR /app
 
-# Copy backend package files first for better caching
-COPY server/package.json ./server/
-COPY server/yarn.lock ./server/
-
 # Install backend dependencies
-WORKDIR /app/server
 RUN yarn install --production --frozen-lockfile
 
 # Copy backend source code
