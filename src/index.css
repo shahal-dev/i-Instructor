@@ -1,3 +1,23 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Smooth scrolling for the entire page */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Smooth transitions for page changes */
+main {
+  transition: opacity 0.15s ease-in-out;
+}
+
+/* Improve button hover states */
+button {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Smooth navbar active state transitions */
+nav button, nav a {
+  transition: all 0.2s ease-in-out;
+}

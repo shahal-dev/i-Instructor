@@ -16,18 +16,36 @@ import AnalyticsDashboard from './components/analytics/AnalyticsDashboard';
 import Footer from './components/Footer';
 import GetHelpButton from './components/common/GetHelpButton';
 import MobileNavigation from './components/mobile/MobileNavigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 const AppContent: React.FC = () => {
   const { user } = useAuth();
   const [showGetHelp, setShowGetHelp] = useState(false);
+  const [currentPage, setCurrentPage] = useState(() => {
+    return window.location.hash.slice(1) || 'home';
+  });
+  const [isNavigating, setIsNavigating] = useState(false);
 
-  // Simple routing based on hash or user state
-  const currentPage = window.location.hash.slice(1) || 'home';
+  // Listen for hash changes without page reload
+  useEffect(() => {
+    const handleHashChange = () => {
+      setCurrentPage(window.location.hash.slice(1) || 'home');
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   const handleNavigate = (page: string) => {
-    window.location.hash = page;
-    window.location.reload(); // Simple refresh for demo
+    // Add a brief loading state for smooth transitions
+    setIsNavigating(true);
+    setTimeout(() => {
+      window.location.hash = page;
+      setCurrentPage(page);
+      setIsNavigating(false);
+      // Smooth scroll to top when navigating to a new page
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 50); // Very brief delay for smoother UX
   };
 
   const handleGetHelp = () => {
@@ -71,8 +89,8 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-16 md:pb-0">
-      <Header />
-      <main>
+      <Header currentPage={currentPage} onNavigate={handleNavigate} />
+      <main className={`transition-opacity duration-150 ${isNavigating ? 'opacity-75' : 'opacity-100'}`}>
         {renderPage()}
       </main>
       <Footer />

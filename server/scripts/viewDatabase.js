@@ -52,8 +52,8 @@ console.log('=' .repeat(30));
 
 const stats = {
   users: db.prepare('SELECT COUNT(*) as count FROM users').get().count,
-  instructors: db.prepare('SELECT COUNT(*) as count FROM users WHERE role = "instructor"').get().count,
-  learners: db.prepare('SELECT COUNT(*) as count FROM users WHERE role = "learner"').get().count,
+  instructors: db.prepare('SELECT COUNT(*) as count FROM users WHERE role = ?').get('instructor').count,
+  learners: db.prepare('SELECT COUNT(*) as count FROM users WHERE role = ?').get('learner').count,
   sessions: db.prepare('SELECT COUNT(*) as count FROM sessions').get().count,
   messages: db.prepare('SELECT COUNT(*) as count FROM messages').get().count,
   knowledge_items: db.prepare('SELECT COUNT(*) as count FROM knowledge_items').get().count,

@@ -119,48 +119,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       provider.addScope('profile');
       provider.addScope('email');
       
+      // Configure popup behavior
+      provider.setCustomParameters({
+        prompt: 'select_account'
+      });
+      
       const result = await signInWithPopup(auth, provider);
       setIsLoading(true);
       
-      // Check if user profile exists, if not create one
-      const userDoc = await getDoc(doc(db, 'users', result.user.uid));
-      
-      if (!userDoc.exists()) {
-        const newUser: User = {
-          id: result.user.uid,
-          name: result.user.displayName || 'User',
-          email: result.user.email || '',
-          avatar: result.user.photoURL || undefined,
-          role: 'learner',
-          rating: 0,
-          emailVerified: result.user.emailVerified,
-          isVerified: false,
-          isOnline: true,
-          responseTime: 0,
-          totalSessions: 0,
-          createdAt: new Date(),
-          lastLoginAt: new Date(),
-          preferences: {
-            notifications: true,
-            emailUpdates: true,
-            theme: 'light'
-          }
-        };
-        
-        await setDoc(doc(db, 'users', result.user.uid), newUser);
-      } else {
-        // Update existing user's last login and online status
-        await updateDoc(doc(db, 'users', result.user.uid), {
-          lastLoginAt: new Date(),
-          isOnline: true,
-          avatar: result.user.photoURL || userDoc.data().avatar
-        });
-      }
+      // The user data will be handled by the onAuthStateChanged listener
+      // which will authenticate with the backend automatically
       
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Google login error:', error);
       setIsLoading(false);
+      
+      // Handle specific Firebase auth errors
+      if (error.code === 'auth/popup-closed-by-user') {
+        console.log('User closed the popup');
+        return false;
+      } else if (error.code === 'auth/popup-blocked') {
+        console.error('Popup was blocked by browser');
+        return false;
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        console.log('Popup request was cancelled');
+        return false;
+      }
+      
       return false;
     }
   };
@@ -175,33 +161,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         displayName: userData.name
       });
 
-      // Create user profile in Firestore
-      const newUser: User = {
-        id: result.user.uid,
-        name: userData.name || '',
-        email: userData.email || '',
-        role: userData.role || 'learner',
-        university: userData.university,
-        department: userData.department,
-        year: userData.year,
-        skills: userData.skills || [],
-        bio: userData.bio,
-        rating: 0,
-        emailVerified: result.user.emailVerified,
-        isVerified: false,
-        isOnline: true,
-        responseTime: 0,
-        totalSessions: 0,
-        createdAt: new Date(),
-        lastLoginAt: new Date(),
-        preferences: {
-          notifications: true,
-          emailUpdates: true,
-          theme: 'light'
-        }
-      };
-      
-      await setDoc(doc(db, 'users', result.user.uid), newUser);
+      // User profile will be created by the backend via the onAuthStateChanged listener
       return true;
     } catch (error) {
       console.error('Registration error:', error);

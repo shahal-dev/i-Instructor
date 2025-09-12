@@ -9,7 +9,7 @@ class SocketService {
       return this.socket;
     }
 
-    const serverUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
+    const serverUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3004';
     
     this.socket = io(serverUrl, {
       transports: ['websocket', 'polling'],

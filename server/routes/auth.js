@@ -1,7 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
-const { statements } = require('../database/db');
+const { statements } = require('../database/db'); // import statements, do NOT call init() here
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -11,14 +11,10 @@ const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
-  if (!token) {
-    return res.status(401).json({ error: 'Access token required' });
-  }
+  if (!token) return res.status(401).json({ error: 'Access token required' });
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) {
-      return res.status(403).json({ error: 'Invalid or expired token' });
-    }
+    if (err) return res.status(403).json({ error: 'Invalid or expired token' });
     req.user = user;
     next();
   });
@@ -28,9 +24,6 @@ const authenticateToken = (req, res, next) => {
 router.post('/firebase-auth', async (req, res) => {
   try {
     const { firebaseToken, userData } = req.body;
-
-    // In a real implementation, you would verify the Firebase token here
-    // For now, we'll create/update the user based on the provided data
 
     let user = statements.getUserByEmail.get(userData.email);
 
@@ -68,32 +61,22 @@ router.post('/firebase-auth', async (req, res) => {
     }
 
     // Update online status
-    statements.updateUserOnlineStatus.run(true, user.id);
+    statements.updateUserOnlineStatus.run(1, user.id);
 
     // Generate JWT token
     const token = jwt.sign(
-      { 
-        userId: user.id, 
-        email: user.email, 
-        role: user.role 
-      },
+      { userId: user.id, email: user.email, role: user.role },
       JWT_SECRET,
       { expiresIn: '7d' }
     );
 
-    // Parse JSON fields
     const userResponse = {
       ...user,
       skills: JSON.parse(user.skills || '[]'),
       preferences: JSON.parse(user.preferences || '{}')
     };
 
-    res.json({
-      success: true,
-      token,
-      user: userResponse
-    });
-
+    res.json({ success: true, token, user: userResponse });
   } catch (error) {
     console.error('Auth error:', error);
     res.status(500).json({ error: 'Authentication failed' });
@@ -103,9 +86,7 @@ router.post('/firebase-auth', async (req, res) => {
 // Logout
 router.post('/logout', authenticateToken, (req, res) => {
   try {
-    // Update user online status
-    statements.updateUserOnlineStatus.run(false, req.user.userId);
-    
+    statements.updateUserOnlineStatus.run(0, req.user.userId);
     res.json({ success: true, message: 'Logged out successfully' });
   } catch (error) {
     console.error('Logout error:', error);
@@ -117,9 +98,7 @@ router.post('/logout', authenticateToken, (req, res) => {
 router.get('/verify', authenticateToken, (req, res) => {
   try {
     const user = statements.getUserById.get(req.user.userId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+    if (!user) return res.status(404).json({ error: 'User not found' });
 
     const userResponse = {
       ...user,

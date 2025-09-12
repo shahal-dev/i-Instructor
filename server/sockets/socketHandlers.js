@@ -40,7 +40,7 @@ module.exports = (io, socket) => {
       }
 
       // Update user online status
-      statements.updateUserOnlineStatus.run(true, userId);
+      statements.updateUserOnlineStatus.run(1, userId);
       
       socket.emit('authenticated', { success: true });
       
@@ -288,7 +288,7 @@ module.exports = (io, socket) => {
         matchingEngine.updateInstructorAvailability(userId, [], false);
         
         // Update user offline status
-        statements.updateUserOnlineStatus.run(false, userId);
+        statements.updateUserOnlineStatus.run(0, userId);
         
         // Remove from active sessions
         if (sessionId && activeSessions.has(sessionId)) {

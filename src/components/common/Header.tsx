@@ -3,7 +3,12 @@ import { User, LogIn, Menu, X } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import AuthModal from './AuthModal';
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  currentPage?: string;
+  onNavigate?: (page: string) => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ currentPage = 'home', onNavigate }) => {
   const { user, logout } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
@@ -14,6 +19,23 @@ const Header: React.FC = () => {
     setShowAuthModal(true);
   };
 
+  const handleNavClick = (page: string, event?: React.MouseEvent) => {
+    if (event) {
+      event.preventDefault();
+    }
+    if (onNavigate) {
+      onNavigate(page);
+    } else {
+      // Fallback to hash navigation without reload
+      window.location.hash = page;
+    }
+    setShowMobileMenu(false); // Close mobile menu on navigation
+  };
+
+  const isActivePage = (page: string) => {
+    return currentPage === page;
+  };
+
   return (
     <>
       <header className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-40">
@@ -21,34 +43,81 @@ const Header: React.FC = () => {
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <div className="text-2xl font-bold text-blue-600">
+              <button
+                onClick={() => handleNavClick('home')}
+                className="text-2xl font-bold text-blue-600 hover:text-blue-700 transition-colors"
+              >
                 i-Instructor
-              </div>
+              </button>
             </div>
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-8">
-              <a href="#how-it-works" className="text-gray-600 hover:text-blue-600 transition-colors">
-                How it Works
-              </a>
-              <a href="#subjects" className="text-gray-600 hover:text-blue-600 transition-colors">
-                Subjects
-              </a>
-              <a href="#leaderboard" className="text-gray-600 hover:text-blue-600 transition-colors">
+              <button
+                onClick={() => handleNavClick('home')}
+                className={`transition-colors ${
+                  isActivePage('home') 
+                    ? 'text-blue-600 font-semibold' 
+                    : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                Home
+              </button>
+              <button
+                onClick={() => handleNavClick('knowledge')}
+                className={`transition-colors ${
+                  isActivePage('knowledge') 
+                    ? 'text-blue-600 font-semibold' 
+                    : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
+                Knowledge Base
+              </button>
+              <button
+                onClick={() => handleNavClick('leaderboard')}
+                className={`transition-colors ${
+                  isActivePage('leaderboard') 
+                    ? 'text-blue-600 font-semibold' 
+                    : 'text-gray-600 hover:text-blue-600'
+                }`}
+              >
                 Top Instructors
-              </a>
-              <a href="#pricing" className="text-gray-600 hover:text-blue-600 transition-colors">
-                Pricing
-              </a>
+              </button>
               {user && (
-                <a href="#dashboard" className="text-gray-600 hover:text-blue-600 transition-colors">
+                <button
+                  onClick={() => handleNavClick('dashboard')}
+                  className={`transition-colors ${
+                    isActivePage('dashboard') 
+                      ? 'text-blue-600 font-semibold' 
+                      : 'text-gray-600 hover:text-blue-600'
+                  }`}
+                >
                   Dashboard
-                </a>
+                </button>
               )}
               {user && (
-                <a href="#profile" className="text-gray-600 hover:text-blue-600 transition-colors">
+                <button
+                  onClick={() => handleNavClick('profile')}
+                  className={`transition-colors ${
+                    isActivePage('profile') 
+                      ? 'text-blue-600 font-semibold' 
+                      : 'text-gray-600 hover:text-blue-600'
+                  }`}
+                >
                   Profile
-                </a>
+                </button>
+              )}
+              {user?.role === 'admin' && (
+                <button
+                  onClick={() => handleNavClick('analytics')}
+                  className={`transition-colors ${
+                    isActivePage('analytics') 
+                      ? 'text-blue-600 font-semibold' 
+                      : 'text-gray-600 hover:text-blue-600'
+                  }`}
+                >
+                  Analytics
+                </button>
               )}
             </nav>
 
@@ -113,20 +182,70 @@ const Header: React.FC = () => {
           {showMobileMenu && (
             <div className="md:hidden py-4 border-t border-gray-100">
               <nav className="flex flex-col space-y-4">
-                <a href="#how-it-works" className="text-gray-600 hover:text-blue-600 transition-colors">
-                  How it Works
-                </a>
-                <a href="#subjects" className="text-gray-600 hover:text-blue-600 transition-colors">
-                  Subjects
-                </a>
-                <a href="#pricing" className="text-gray-600 hover:text-blue-600 transition-colors">
-                  Pricing
-                </a>
+                <button
+                  onClick={() => handleNavClick('home')}
+                  className={`text-left transition-colors ${
+                    isActivePage('home') 
+                      ? 'text-blue-600 font-semibold' 
+                      : 'text-gray-600 hover:text-blue-600'
+                  }`}
+                >
+                  Home
+                </button>
+                <button
+                  onClick={() => handleNavClick('knowledge')}
+                  className={`text-left transition-colors ${
+                    isActivePage('knowledge') 
+                      ? 'text-blue-600 font-semibold' 
+                      : 'text-gray-600 hover:text-blue-600'
+                  }`}
+                >
+                  Knowledge Base
+                </button>
+                <button
+                  onClick={() => handleNavClick('leaderboard')}
+                  className={`text-left transition-colors ${
+                    isActivePage('leaderboard') 
+                      ? 'text-blue-600 font-semibold' 
+                      : 'text-gray-600 hover:text-blue-600'
+                  }`}
+                >
+                  Top Instructors
+                </button>
                 {user ? (
                   <>
-                    <a href="#dashboard" className="text-gray-600 hover:text-blue-600 transition-colors">
+                    <button
+                      onClick={() => handleNavClick('dashboard')}
+                      className={`text-left transition-colors ${
+                        isActivePage('dashboard') 
+                          ? 'text-blue-600 font-semibold' 
+                          : 'text-gray-600 hover:text-blue-600'
+                      }`}
+                    >
                       Dashboard
-                    </a>
+                    </button>
+                    <button
+                      onClick={() => handleNavClick('profile')}
+                      className={`text-left transition-colors ${
+                        isActivePage('profile') 
+                          ? 'text-blue-600 font-semibold' 
+                          : 'text-gray-600 hover:text-blue-600'
+                      }`}
+                    >
+                      Profile
+                    </button>
+                    {user.role === 'admin' && (
+                      <button
+                        onClick={() => handleNavClick('analytics')}
+                        className={`text-left transition-colors ${
+                          isActivePage('analytics') 
+                            ? 'text-blue-600 font-semibold' 
+                            : 'text-gray-600 hover:text-blue-600'
+                        }`}
+                      >
+                        Analytics
+                      </button>
+                    )}
                     <div className="flex items-center space-x-2 pt-2">
                       {user.avatar ? (
                         <img 

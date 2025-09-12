@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3004/api';
 
 class ApiService {
   private token: string | null = null;
@@ -203,6 +203,17 @@ class ApiService {
   async getRevenueAnalytics() {
     return this.request('/analytics/revenue');
   }
+
+  // Admin dashboard methods
+  async getAdminDashboard() {
+    return this.request('/analytics/dashboard');
+  }
+
+  async getAdminUsers(params = {}) {
+    const queryString = new URLSearchParams(params).toString();
+    return this.request(`/analytics/users${queryString ? `?${queryString}` : ''}`);
+  }
+
   async acceptQueueItem(queueId: string) {
     return this.request(`/matching/accept/${queueId}`, {
       method: 'POST',

@@ -1,6 +1,6 @@
 const cron = require('node-cron');
 const emailService = require('./emailService');
-const { statements } = require('../database/db');
+const { db } = require('../database/db');
 const fileUploadService = require('./fileUploadService');
 
 class SchedulerService {
@@ -44,7 +44,7 @@ class SchedulerService {
       const tenMinutesFromNow = new Date(now.getTime() + 10 * 60 * 1000);
 
       // Get sessions starting in 10 minutes
-      const upcomingSessions = statements.db.prepare(`
+      const upcomingSessions = db.prepare(`
         SELECT s.*, 
                l.email as learner_email, l.name as learner_name,
                i.email as instructor_email, i.name as instructor_name
@@ -73,7 +73,7 @@ class SchedulerService {
         ]);
 
         // Mark reminder as sent
-        statements.db.prepare('UPDATE sessions SET reminder_sent = 1 WHERE id = ?').run(session.id);
+        db.prepare('UPDATE sessions SET reminder_sent = 1 WHERE id = ?').run(session.id);
       }
 
       if (upcomingSessions.length > 0) {
@@ -91,7 +91,7 @@ class SchedulerService {
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
       // Get users who had activity in the past week
-      const activeUsers = statements.db.prepare(`
+      const activeUsers = db.prepare(`
         SELECT DISTINCT u.id, u.email, u.name, u.role
         FROM users u
         JOIN sessions s ON (u.id = s.learner_id OR u.id = s.instructor_id)
@@ -119,7 +119,7 @@ class SchedulerService {
   // Generate weekly summary data
   async generateWeeklySummary(userId, fromDate) {
     try {
-      const sessions = statements.db.prepare(`
+      const sessions = db.prepare(`
         SELECT * FROM sessions 
         WHERE (learner_id = ? OR instructor_id = ?) 
         AND created_at >= ? 
@@ -159,7 +159,7 @@ class SchedulerService {
       const now = new Date();
 
       // Mark scheduled sessions as active if they should have started
-      const startedSessions = statements.db.prepare(`
+      const startedSessions = db.prepare(`
         UPDATE sessions 
         SET status = 'active', updated_at = CURRENT_TIMESTAMP
         WHERE status = 'scheduled' 
@@ -167,7 +167,7 @@ class SchedulerService {
       `).run(now.toISOString());
 
       // Mark active sessions as completed if they've exceeded expected duration + buffer
-      const completedSessions = statements.db.prepare(`
+      const completedSessions = db.prepare(`
         UPDATE sessions 
         SET status = 'completed', ended_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
         WHERE status = 'active' 
@@ -187,7 +187,7 @@ class SchedulerService {
     try {
       const now = new Date();
       
-      const result = statements.db.prepare(`
+      const result = db.prepare(`
         DELETE FROM session_queue 
         WHERE expires_at <= ? OR created_at <= datetime('now', '-30 minutes')
       `).run(now.toISOString());

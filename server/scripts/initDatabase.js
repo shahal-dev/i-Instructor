@@ -1,4 +1,4 @@
-const { init, db, statements } = require('../database/db');
+const { init, db } = require('../database/db');
 const { v4: uuidv4 } = require('uuid');
 
 console.log('🚀 Initializing i-Instructor Database...');
@@ -61,7 +61,10 @@ const sampleUsers = [
 // Insert sample users
 sampleUsers.forEach(user => {
   try {
-    statements.createUser.run(
+    db.prepare(`
+      INSERT INTO users (id, email, name, avatar, role, university, department, year, skills, bio, preferences)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
       user.id, user.email, user.name, null, user.role,
       user.university, user.department, user.year,
       user.skills, user.bio, JSON.stringify({})
@@ -98,7 +101,10 @@ const knowledgeItems = [
 
 knowledgeItems.forEach(item => {
   try {
-    statements.createKnowledgeItem.run(
+    db.prepare(`
+      INSERT INTO knowledge_items (id, title, content, subject, tags, author_id)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(
       item.id, item.title, item.content, item.subject,
       item.tags, item.author_id
     );
@@ -110,7 +116,7 @@ knowledgeItems.forEach(item => {
 
 // Database statistics
 const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get();
-const instructorCount = db.prepare('SELECT COUNT(*) as count FROM users WHERE role = "instructor"').get();
+const instructorCount = db.prepare('SELECT COUNT(*) as count FROM users WHERE role = ?').get('instructor');
 const knowledgeCount = db.prepare('SELECT COUNT(*) as count FROM knowledge_items').get();
 
 console.log('\n📊 Database Statistics:');

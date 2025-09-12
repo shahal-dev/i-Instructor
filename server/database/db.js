@@ -57,6 +57,8 @@ const init = () => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       started_at DATETIME,
       ended_at DATETIME,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      reminder_sent BOOLEAN DEFAULT FALSE,
       FOREIGN KEY (learner_id) REFERENCES users (id),
       FOREIGN KEY (instructor_id) REFERENCES users (id)
     )
@@ -272,7 +274,6 @@ const init = () => {
     CREATE INDEX IF NOT EXISTS idx_refresh_tokens_user ON refresh_tokens(user_id);
 
     CREATE INDEX IF NOT EXISTS idx_sessions_started_at ON sessions(started_at);
-    CREATE INDEX IF NOT EXISTS idx_sessions_reminder ON sessions(reminder_sent);
   `);
 
   // Add new tables for file management and scheduling
@@ -304,88 +305,99 @@ const init = () => {
     )
   `);
 
-  // Add reminder_sent column to sessions table
-  db.exec(`
-    ALTER TABLE sessions ADD COLUMN reminder_sent BOOLEAN DEFAULT FALSE;
-  `);
+  // Note: reminder_sent column can be added later if needed
   console.log('Database initialized successfully');
+  
+  // Initialize prepared statements after tables are created
+  initStatements();
 };
 
-// Prepared statements for common operations
-const statements = {
-  // Users
-  createUser: db.prepare(`
-    INSERT INTO users (id, email, name, avatar, role, university, department, year, skills, bio, preferences)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `),
-  getUserById: db.prepare('SELECT * FROM users WHERE id = ?'),
-  getUserByEmail: db.prepare('SELECT * FROM users WHERE email = ?'),
-  updateUser: db.prepare(`
-    UPDATE users SET name = ?, avatar = ?, university = ?, department = ?, year = ?, 
-                     skills = ?, bio = ?, preferences = ?, updated_at = CURRENT_TIMESTAMP 
-    WHERE id = ?
-  `),
-  updateUserOnlineStatus: db.prepare('UPDATE users SET is_online = ?, last_login_at = CURRENT_TIMESTAMP WHERE id = ?'),
-  getOnlineInstructors: db.prepare(`
-    SELECT * FROM users 
-    WHERE role = 'instructor' AND is_online = TRUE 
-    ORDER BY rating DESC, response_time ASC
-  `),
+// Initialize prepared statements
+const initStatements = () => {
+  const statementsObj = {
+    // Users
+    createUser: db.prepare(`
+      INSERT INTO users (id, email, name, avatar, role, university, department, year, skills, bio, preferences)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `),
+    getUserById: db.prepare('SELECT * FROM users WHERE id = ?'),
+    getUserByEmail: db.prepare('SELECT * FROM users WHERE email = ?'),
+    updateUser: db.prepare(`
+      UPDATE users SET name = ?, avatar = ?, university = ?, department = ?, year = ?, 
+                       skills = ?, bio = ?, preferences = ?, updated_at = CURRENT_TIMESTAMP 
+      WHERE id = ?
+    `),
+    updateUserOnlineStatus: db.prepare('UPDATE users SET is_online = ?, last_login_at = CURRENT_TIMESTAMP WHERE id = ?'),
+    getOnlineInstructors: db.prepare(`
+      SELECT * FROM users 
+      WHERE role = 'instructor' AND is_online = TRUE 
+      ORDER BY rating DESC, response_time ASC
+    `),
 
-  // Sessions
-  createSession: db.prepare(`
-    INSERT INTO sessions (id, learner_id, instructor_id, subject, topic, description, price)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
-  `),
-  getSessionById: db.prepare('SELECT * FROM sessions WHERE id = ?'),
-  updateSessionStatus: db.prepare('UPDATE sessions SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?'),
-  getUserSessions: db.prepare(`
-    SELECT s.*, u1.name as learner_name, u2.name as instructor_name 
-    FROM sessions s
-    LEFT JOIN users u1 ON s.learner_id = u1.id
-    LEFT JOIN users u2 ON s.instructor_id = u2.id
-    WHERE s.learner_id = ? OR s.instructor_id = ?
-    ORDER BY s.created_at DESC
-  `),
+    // Sessions
+    createSession: db.prepare(`
+      INSERT INTO sessions (id, learner_id, instructor_id, subject, topic, description, price)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `),
+    getSessionById: db.prepare('SELECT * FROM sessions WHERE id = ?'),
+    updateSessionStatus: db.prepare('UPDATE sessions SET status = ? WHERE id = ?'),
+    getUserSessions: db.prepare(`
+      SELECT s.*, u1.name as learner_name, u2.name as instructor_name 
+      FROM sessions s
+      LEFT JOIN users u1 ON s.learner_id = u1.id
+      LEFT JOIN users u2 ON s.instructor_id = u2.id
+      WHERE s.learner_id = ? OR s.instructor_id = ?
+      ORDER BY s.created_at DESC
+    `),
 
-  // Messages
-  createMessage: db.prepare(`
-    INSERT INTO messages (id, session_id, user_id, content, message_type)
-    VALUES (?, ?, ?, ?, ?)
-  `),
-  getSessionMessages: db.prepare(`
-    SELECT m.*, u.name as user_name, u.avatar as user_avatar
-    FROM messages m
-    JOIN users u ON m.user_id = u.id
-    WHERE m.session_id = ?
-    ORDER BY m.created_at ASC
-  `),
+    // Messages
+    createMessage: db.prepare(`
+      INSERT INTO messages (id, session_id, user_id, content, message_type)
+      VALUES (?, ?, ?, ?, ?)
+    `),
+    getSessionMessages: db.prepare(`
+      SELECT m.*, u.name as user_name, u.avatar as user_avatar
+      FROM messages m
+      JOIN users u ON m.user_id = u.id
+      WHERE m.session_id = ?
+      ORDER BY m.created_at ASC
+    `),
 
-  // Queue
-  addToQueue: db.prepare(`
-    INSERT INTO session_queue (id, learner_id, subject, topic, description, urgency, max_price, expires_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `),
-  getQueueItem: db.prepare('SELECT * FROM session_queue WHERE id = ?'),
-  removeFromQueue: db.prepare('DELETE FROM session_queue WHERE id = ?'),
-  getQueueBySubject: db.prepare('SELECT * FROM session_queue WHERE subject = ? ORDER BY created_at ASC'),
+    // Queue
+    addToQueue: db.prepare(`
+      INSERT INTO session_queue (id, learner_id, subject, topic, description, urgency, max_price, expires_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `),
+    getQueueItem: db.prepare('SELECT * FROM session_queue WHERE id = ?'),
+    removeFromQueue: db.prepare('DELETE FROM session_queue WHERE id = ?'),
+    getQueueBySubject: db.prepare('SELECT * FROM session_queue WHERE subject = ? ORDER BY created_at ASC'),
 
-  // Knowledge base
-  createKnowledgeItem: db.prepare(`
-    INSERT INTO knowledge_items (id, title, content, subject, tags, author_id)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `),
-  searchKnowledge: db.prepare(`
-    SELECT k.*, u.name as author_name
-    FROM knowledge_items k
-    JOIN users u ON k.author_id = u.id
-    WHERE k.title LIKE ? OR k.content LIKE ? OR k.subject LIKE ?
-    ORDER BY k.upvotes DESC, k.created_at DESC
-  `)
+    // Knowledge base
+    createKnowledgeItem: db.prepare(`
+      INSERT INTO knowledge_items (id, title, content, subject, tags, author_id)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `),
+    searchKnowledge: db.prepare(`
+      SELECT k.*, u.name as author_name
+      FROM knowledge_items k
+      JOIN users u ON k.author_id = u.id
+      WHERE k.title LIKE ? OR k.content LIKE ? OR k.subject LIKE ?
+      ORDER BY k.upvotes DESC, k.created_at DESC
+    `)
+  };
+  
+  // Update both the local variable and the module export
+  statements = statementsObj;
+  moduleExports.statements = statementsObj;
 };
 
-module.exports = {
+// Prepared statements for common operations (initialized after tables are created)
+let statements = {};
+
+const moduleExports = {
   db,
   init,
   statements
 };
+
+module.exports = moduleExports;

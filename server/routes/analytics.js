@@ -1,5 +1,5 @@
 const express = require('express');
-const { statements } = require('../database/db');
+const { statements, db } = require('../database/db');
 const { authenticateToken } = require('./auth');
 
 const router = express.Router();
@@ -35,35 +35,35 @@ router.get('/overview', authenticateToken, requireAdmin, (req, res) => {
     }
 
     // Total users
-    const totalUsers = statements.db.prepare(`
+    const totalUsers = db.prepare(`
       SELECT COUNT(*) as count FROM users WHERE 1=1 ${dateFilter}
     `).get();
 
     // Active users (logged in recently)
-    const activeUsers = statements.db.prepare(`
+    const activeUsers = db.prepare(`
       SELECT COUNT(*) as count FROM users 
       WHERE last_login_at >= datetime('now', '-24 hours')
     `).get();
 
     // Total sessions
-    const totalSessions = statements.db.prepare(`
+    const totalSessions = db.prepare(`
       SELECT COUNT(*) as count FROM sessions WHERE 1=1 ${dateFilter}
     `).get();
 
     // Revenue
-    const revenue = statements.db.prepare(`
+    const revenue = db.prepare(`
       SELECT SUM(amount) as total FROM payments 
       WHERE status = 'completed' ${dateFilter.replace('created_at', 'completed_at')}
     `).get();
 
     // Average session time
-    const avgSessionTime = statements.db.prepare(`
+    const avgSessionTime = db.prepare(`
       SELECT AVG(duration) as avg_duration FROM sessions 
       WHERE status = 'completed' ${dateFilter}
     `).get();
 
     // Popular subjects
-    const popularSubjects = statements.db.prepare(`
+    const popularSubjects = db.prepare(`
       SELECT subject, COUNT(*) as session_count,
              ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM sessions WHERE 1=1 ${dateFilter}), 1) as percentage
       FROM sessions 
@@ -74,7 +74,7 @@ router.get('/overview', authenticateToken, requireAdmin, (req, res) => {
     `).all();
 
     // Peak hours
-    const peakHours = statements.db.prepare(`
+    const peakHours = db.prepare(`
       SELECT strftime('%H:00', created_at) as hour, COUNT(*) as sessions
       FROM sessions 
       WHERE 1=1 ${dateFilter}
@@ -104,7 +104,7 @@ router.get('/overview', authenticateToken, requireAdmin, (req, res) => {
 // User growth analytics
 router.get('/user-growth', authenticateToken, requireAdmin, (req, res) => {
   try {
-    const growth = statements.db.prepare(`
+    const growth = db.prepare(`
       SELECT 
         date(created_at) as date,
         COUNT(*) as new_users,
@@ -126,7 +126,7 @@ router.get('/user-growth', authenticateToken, requireAdmin, (req, res) => {
 router.get('/sessions', authenticateToken, requireAdmin, (req, res) => {
   try {
     // Session completion rates
-    const completionRates = statements.db.prepare(`
+    const completionRates = db.prepare(`
       SELECT 
         status,
         COUNT(*) as count,
@@ -136,7 +136,7 @@ router.get('/sessions', authenticateToken, requireAdmin, (req, res) => {
     `).all();
 
     // Average session duration by subject
-    const durationBySubject = statements.db.prepare(`
+    const durationBySubject = db.prepare(`
       SELECT 
         subject,
         AVG(duration) as avg_duration,
@@ -148,7 +148,7 @@ router.get('/sessions', authenticateToken, requireAdmin, (req, res) => {
     `).all();
 
     // Session ratings distribution
-    const ratingsDistribution = statements.db.prepare(`
+    const ratingsDistribution = db.prepare(`
       SELECT 
         rating,
         COUNT(*) as count
@@ -175,7 +175,7 @@ router.get('/sessions', authenticateToken, requireAdmin, (req, res) => {
 // Instructor performance analytics
 router.get('/instructors', authenticateToken, requireAdmin, (req, res) => {
   try {
-    const instructorStats = statements.db.prepare(`
+    const instructorStats = db.prepare(`
       SELECT 
         u.id,
         u.name,
@@ -205,7 +205,7 @@ router.get('/instructors', authenticateToken, requireAdmin, (req, res) => {
 router.get('/revenue', authenticateToken, requireAdmin, (req, res) => {
   try {
     // Daily revenue for last 30 days
-    const dailyRevenue = statements.db.prepare(`
+    const dailyRevenue = db.prepare(`
       SELECT 
         date(completed_at) as date,
         SUM(amount) as revenue,
@@ -217,7 +217,7 @@ router.get('/revenue', authenticateToken, requireAdmin, (req, res) => {
     `).all();
 
     // Revenue by subject
-    const revenueBySubject = statements.db.prepare(`
+    const revenueBySubject = db.prepare(`
       SELECT 
         s.subject,
         SUM(p.amount) as revenue,
@@ -231,7 +231,7 @@ router.get('/revenue', authenticateToken, requireAdmin, (req, res) => {
     `).all();
 
     // Platform commission
-    const totalRevenue = statements.db.prepare(`
+    const totalRevenue = db.prepare(`
       SELECT SUM(amount) as total FROM payments WHERE status = 'completed'
     `).get();
 
@@ -249,6 +249,171 @@ router.get('/revenue', authenticateToken, requireAdmin, (req, res) => {
   } catch (error) {
     console.error('Revenue analytics error:', error);
     res.status(500).json({ error: 'Failed to get revenue analytics' });
+  }
+});
+
+// Admin dashboard overview (combines multiple stats for dashboard)
+router.get('/dashboard', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    // Get current stats
+    const totalUsers = db.prepare(`SELECT COUNT(*) as count FROM users`).get();
+    const activeUsers = db.prepare(`
+      SELECT COUNT(*) as count FROM users 
+      WHERE is_online = 1 OR last_login_at >= datetime('now', '-1 hour')
+    `).get();
+    const totalSessions = db.prepare(`SELECT COUNT(*) as count FROM sessions`).get();
+    const completedSessions = db.prepare(`
+      SELECT COUNT(*) as count FROM sessions WHERE status = 'completed'
+    `).get();
+    
+    // Revenue
+    const revenue = db.prepare(`
+      SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE status = 'completed'
+    `).get();
+    
+    // Average session time
+    const avgSessionTime = db.prepare(`
+      SELECT COALESCE(AVG(duration), 0) as avg_duration FROM sessions 
+      WHERE status = 'completed' AND duration > 0
+    `).get();
+    
+    // Recent sessions (last 10)
+    const recentSessions = db.prepare(`
+      SELECT 
+        s.id,
+        s.subject,
+        s.duration,
+        s.status,
+        s.price,
+        s.created_at,
+        l.name as learner_name,
+        i.name as instructor_name
+      FROM sessions s
+      LEFT JOIN users l ON s.learner_id = l.id
+      LEFT JOIN users i ON s.instructor_id = i.id
+      ORDER BY s.created_at DESC
+      LIMIT 10
+    `).all();
+    
+    // User role distribution
+    const usersByRole = db.prepare(`
+      SELECT role, COUNT(*) as count FROM users GROUP BY role
+    `).all();
+    
+    // Growth stats (compared to last month)
+    const thisMonthUsers = db.prepare(`
+      SELECT COUNT(*) as count FROM users 
+      WHERE created_at >= datetime('now', 'start of month')
+    `).get();
+    
+    const lastMonthUsers = db.prepare(`
+      SELECT COUNT(*) as count FROM users 
+      WHERE created_at >= datetime('now', 'start of month', '-1 month')
+      AND created_at < datetime('now', 'start of month')
+    `).get();
+    
+    const thisMonthSessions = db.prepare(`
+      SELECT COUNT(*) as count FROM sessions 
+      WHERE created_at >= datetime('now', 'start of month')
+    `).get();
+    
+    const lastMonthSessions = db.prepare(`
+      SELECT COUNT(*) as count FROM sessions 
+      WHERE created_at >= datetime('now', 'start of month', '-1 month')
+      AND created_at < datetime('now', 'start of month')
+    `).get();
+    
+    // Calculate growth percentages
+    const userGrowth = lastMonthUsers.count > 0 
+      ? ((thisMonthUsers.count - lastMonthUsers.count) / lastMonthUsers.count * 100).toFixed(1)
+      : 0;
+    
+    const sessionGrowth = lastMonthSessions.count > 0
+      ? ((thisMonthSessions.count - lastMonthSessions.count) / lastMonthSessions.count * 100).toFixed(1)
+      : 0;
+    
+    // Dispute rate (assuming we don't have disputes table, set to 0)
+    const disputeRate = 0; // Can be updated when disputes feature is implemented
+    
+    res.json({
+      success: true,
+      dashboard: {
+        stats: {
+          totalUsers: totalUsers.count,
+          activeUsers: activeUsers.count,
+          totalSessions: totalSessions.count,
+          completedSessions: completedSessions.count,
+          revenue: revenue.total,
+          avgSessionTime: Math.round(avgSessionTime.avg_duration || 0),
+          disputeRate,
+          userGrowth: parseFloat(userGrowth),
+          sessionGrowth: parseFloat(sessionGrowth)
+        },
+        recentSessions: recentSessions.map(session => ({
+          id: session.id,
+          learner: session.learner_name || 'Unknown',
+          instructor: session.instructor_name || 'Unassigned',
+          subject: session.subject,
+          duration: session.duration || 0,
+          status: session.status,
+          revenue: session.price || 0,
+          createdAt: session.created_at
+        })),
+        usersByRole
+      }
+    });
+  } catch (error) {
+    console.error('Dashboard analytics error:', error);
+    res.status(500).json({ error: 'Failed to get dashboard analytics' });
+  }
+});
+
+// Get all users for admin management
+router.get('/users', authenticateToken, requireAdmin, (req, res) => {
+  try {
+    const { page = 1, limit = 20, role, search } = req.query;
+    const offset = (page - 1) * limit;
+    
+    let whereClause = 'WHERE 1=1';
+    let params = [];
+    
+    if (role && role !== 'all') {
+      whereClause += ' AND role = ?';
+      params.push(role);
+    }
+    
+    if (search) {
+      whereClause += ' AND (name LIKE ? OR email LIKE ?)';
+      params.push(`%${search}%`, `%${search}%`);
+    }
+    
+    const users = db.prepare(`
+      SELECT 
+        id, name, email, role, rating, total_sessions, is_verified, 
+        is_online, created_at, last_login_at
+      FROM users 
+      ${whereClause}
+      ORDER BY created_at DESC
+      LIMIT ? OFFSET ?
+    `).all(...params, limit, offset);
+    
+    const totalCount = db.prepare(`
+      SELECT COUNT(*) as count FROM users ${whereClause}
+    `).get(...params);
+    
+    res.json({
+      success: true,
+      users,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total: totalCount.count,
+        pages: Math.ceil(totalCount.count / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Get users error:', error);
+    res.status(500).json({ error: 'Failed to get users' });
   }
 });
 

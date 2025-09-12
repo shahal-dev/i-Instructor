@@ -6,7 +6,7 @@ const { authenticateToken } = require('./auth');
 const router = express.Router();
 
 // Email transporter setup
-const transporter = nodemailer.createTransporter({
+const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: 587,
   secure: false,
