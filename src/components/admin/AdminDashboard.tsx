@@ -120,113 +120,113 @@ const AdminDashboard: React.FC = () => {
     if (!stats) return null;
 
     return (
-      <div className="space-y-6">
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-xl border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Users</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalUsers.toLocaleString()}</p>
+    <div className="space-y-6">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Total Users</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalUsers.toLocaleString()}</p>
                 <p className={`text-sm ${stats.userGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {stats.userGrowth >= 0 ? '+' : ''}{stats.userGrowth}% this month
                 </p>
-              </div>
-              <Users className="w-8 h-8 text-blue-600" />
             </div>
+            <Users className="w-8 h-8 text-blue-600" />
           </div>
+        </div>
 
-          <div className="bg-white p-6 rounded-xl border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
                 <p className="text-sm text-gray-600">Active Users</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.activeUsers}</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.activeUsers}</p>
                 <p className="text-sm text-blue-600">Online now</p>
-              </div>
-              <Activity className="w-8 h-8 text-green-600" />
             </div>
+            <Activity className="w-8 h-8 text-green-600" />
           </div>
+        </div>
 
-          <div className="bg-white p-6 rounded-xl border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Total Sessions</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalSessions.toLocaleString()}</p>
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Total Sessions</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalSessions.toLocaleString()}</p>
                 <p className={`text-sm ${stats.sessionGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {stats.sessionGrowth >= 0 ? '+' : ''}{stats.sessionGrowth}% this month
                 </p>
-              </div>
-              <Clock className="w-8 h-8 text-purple-600" />
             </div>
+            <Clock className="w-8 h-8 text-purple-600" />
           </div>
+        </div>
 
-          <div className="bg-white p-6 rounded-xl border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Revenue</p>
-                <p className="text-2xl font-bold text-gray-900">${stats.revenue.toLocaleString()}</p>
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Revenue</p>
+              <p className="text-2xl font-bold text-gray-900">${stats.revenue.toLocaleString()}</p>
                 <p className="text-sm text-gray-600">Total earned</p>
-              </div>
-              <DollarSign className="w-8 h-8 text-green-600" />
             </div>
+            <DollarSign className="w-8 h-8 text-green-600" />
           </div>
+        </div>
 
-          <div className="bg-white p-6 rounded-xl border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600">Avg Session</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.avgSessionTime}m</p>
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Avg Session</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.avgSessionTime}m</p>
                 <p className="text-sm text-gray-600">Duration</p>
-              </div>
-              <BarChart3 className="w-8 h-8 text-orange-600" />
             </div>
+            <BarChart3 className="w-8 h-8 text-orange-600" />
           </div>
+        </div>
 
-          <div className="bg-white p-6 rounded-xl border border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
+        <div className="bg-white p-6 rounded-xl border border-gray-200">
+          <div className="flex items-center justify-between">
+            <div>
                 <p className="text-sm text-gray-600">Completed Sessions</p>
                 <p className="text-2xl font-bold text-gray-900">{stats.completedSessions.toLocaleString()}</p>
                 <p className="text-sm text-green-600">Success rate</p>
               </div>
               <Shield className="w-8 h-8 text-green-600" />
-            </div>
           </div>
         </div>
+      </div>
 
-        {/* Recent Activity */}
-        <div className="grid lg:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Sessions</h3>
+      {/* Recent Activity */}
+      <div className="grid lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Sessions</h3>
             {recentSessions.length > 0 ? (
-              <div className="space-y-3">
-                {recentSessions.map((session) => (
-                  <div key={session.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div>
-                      <div className="font-medium text-gray-900">{session.learner}</div>
+          <div className="space-y-3">
+            {recentSessions.map((session) => (
+              <div key={session.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <div className="font-medium text-gray-900">{session.learner}</div>
                       <div className="text-sm text-gray-600">
                         {session.subject} • {session.duration}m • {session.instructor}
                       </div>
                       <div className="text-xs text-gray-500">{formatDate(session.createdAt)}</div>
-                    </div>
-                    <div className="text-right">
+                </div>
+                <div className="text-right">
                       <div className="font-semibold text-green-600">${session.revenue.toFixed(2)}</div>
                       <div className={`text-xs px-2 py-1 rounded-full ${getStatusColor(session.status)}`}>
-                        {session.status}
-                      </div>
-                    </div>
+                    {session.status}
                   </div>
-                ))}
+                </div>
               </div>
+            ))}
+          </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
                 <Clock className="w-8 h-8 mx-auto mb-2" />
                 <p>No recent sessions</p>
               </div>
             )}
-          </div>
+        </div>
 
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">System Status</h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
@@ -249,17 +249,17 @@ const AdminDashboard: React.FC = () => {
                   <span className="text-sm font-medium text-gray-900">Socket Server</span>
                 </div>
                 <span className="text-sm text-green-600">Online</span>
-              </div>
+                  </div>
               <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                <div className="text-sm text-gray-600">
+                  <div className="text-sm text-gray-600">
                   Last updated: {new Date().toLocaleTimeString()}
                 </div>
               </div>
             </div>
-          </div>
         </div>
       </div>
-    );
+    </div>
+  );
   };
 
   const renderUsers = () => (
@@ -393,10 +393,10 @@ const AdminDashboard: React.FC = () => {
           )}
         </div>
       ) : (
-        <div className="text-center py-12 text-gray-500">
-          <Users className="w-12 h-12 mx-auto mb-4" />
+      <div className="text-center py-12 text-gray-500">
+        <Users className="w-12 h-12 mx-auto mb-4" />
           <p>No users found</p>
-        </div>
+      </div>
       )}
     </div>
   );

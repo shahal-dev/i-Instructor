@@ -117,11 +117,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ error: 'Route not found' });
-});
-
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ 
@@ -137,9 +132,14 @@ if (process.env.NODE_ENV === 'production') {
   const path = require('path');
   app.use(express.static(path.join(__dirname, 'public')));
   
-  // Catch all handler for React Router
+  // Catch all handler for React Router (must be last)
   app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  });
+} else {
+  // 404 handler for development (only when not serving static files)
+  app.use('*', (req, res) => {
+    res.status(404).json({ error: 'Route not found' });
   });
 }
 
