@@ -35,6 +35,11 @@ Railway offers free hosting with automatic deployments from GitHub.
    railway up
    ```
 
+   **Note**: Railway will automatically use the `railway.json` configuration which specifies:
+   - Docker build using `Dockerfile`
+   - Start command: `node index.js` (runs from `/app` directory in container)
+   - Restart policy with 10 retries
+
 3. **Set Environment Variables:**
    In Railway dashboard, add these environment variables:
    ```
